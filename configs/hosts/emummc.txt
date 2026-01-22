@@ -1,0 +1,111 @@
+# =============================================================================
+# NitroPack - DNS/Hosts Block List for emuMMC
+# =============================================================================
+# This file blocks Nintendo servers to help prevent console bans when using CFW.
+# Place this file at: SD:/atmosphere/hosts/emummc.txt
+#
+# HOW IT WORKS:
+# Lines starting with 127.0.0.1 redirect domains to localhost (blocking them).
+# Remove the # at the start of a line to enable blocking for that domain.
+#
+# WARNING: Blocking servers means:
+# - No online play (in CFW)
+# - No eShop access (in CFW)
+# - No system/game updates (in CFW)
+# - Some games may not work properly offline
+#
+# RECOMMENDATION: Use this in emuMMC, keep sysMMC clean for online play.
+# =============================================================================
+
+# =============================================================================
+# NINTENDO TELEMETRY & ERROR REPORTING
+# Highly recommended to block - these report crash data to Nintendo
+# =============================================================================
+
+# Crash/Error reporting servers
+#127.0.0.1 receive-lp1.dg.srv.nintendo.net
+#127.0.0.1 receive-lp1.er.srv.nintendo.net
+
+# =============================================================================
+# NINTENDO ACCOUNT & AUTHENTICATION
+# Block these to prevent Nintendo from logging your CFW sessions
+# =============================================================================
+
+# Account servers
+#127.0.0.1 *accounts.nintendo.com
+#127.0.0.1 accounts.nintendo.com
+
+# BAA (account authentication)
+#127.0.0.1 *api.accounts.nintendo.com
+#127.0.0.1 e0d67c509fb203858ebcb2fe3f88c2aa.baas.nintendo.com
+#127.0.0.1 *.baas.nintendo.com
+
+# =============================================================================
+# NINTENDO NETWORK SERVICES
+# Block these to prevent online features from working
+# =============================================================================
+
+# eShop
+#127.0.0.1 *eshop.nintendo.net
+#127.0.0.1 *bugyo.hac.lp1.eshop.nintendo.net
+
+# Game updates and CDN
+#127.0.0.1 *atumn.hac.lp1.d4c.nintendo.net
+#127.0.0.1 *sun.hac.lp1.d4c.nintendo.net
+
+# News/Push notifications
+#127.0.0.1 *bcat-topics-lp1.nintendo.net
+#127.0.0.1 *bcat-list-lp1.nintendo.net
+
+# =============================================================================
+# CONNECTION TEST SERVERS
+# Blocking these may cause "unable to connect to internet" errors
+# =============================================================================
+
+# Connection test (uncomment only if you want to appear offline)
+#127.0.0.1 *conntest.nintendowifi.net
+#127.0.0.1 ctest.cdn.nintendo.net
+
+# =============================================================================
+# NINTENDO WILDCARD BLOCKS
+# WARNING: These are aggressive and will block ALL Nintendo services
+# Only use if you want complete Nintendo isolation
+# =============================================================================
+
+# Block all Nintendo domains (AGGRESSIVE - uncomment with caution)
+#127.0.0.1 *nintendo.*
+#127.0.0.1 *nintendo-europe.com
+#127.0.0.1 *nintendoswitch.*
+#127.0.0.1 *nintendowifi.net
+#127.0.0.1 *nintendo.net
+#127.0.0.1 *nintendo.com
+
+# =============================================================================
+# KNOWN TELEMETRY IPS
+# Direct IP blocks (in case DNS isn't enough)
+# =============================================================================
+
+#127.0.0.1 95.216.149.205
+
+# =============================================================================
+# CUSTOM BLOCKS
+# Add your own domains below
+# =============================================================================
+
+
+
+# =============================================================================
+# NOTES
+# =============================================================================
+# - This file ONLY affects emuMMC (emulated NAND)
+# - For sysMMC blocking, use: SD:/atmosphere/hosts/sysmmc.txt
+# - Wildcards (*) match any subdomain
+# - Changes take effect after rebooting into CFW
+# - Test connectivity after enabling blocks
+#
+# STAY SAFE:
+# 1. Use emuMMC for CFW, sysMMC for legitimate online play
+# 2. Don't use cheats online
+# 3. Don't play pirated games online
+# 4. Keep this file updated
+# =============================================================================

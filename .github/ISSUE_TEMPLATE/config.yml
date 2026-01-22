@@ -1,0 +1,14 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 📖 README & Documentation
+    url: https://github.com/YOUR_USERNAME/NitroPack#readme
+    about: Please read the documentation before opening an issue
+  - name: ❓ FAQ Section
+    url: https://github.com/YOUR_USERNAME/NitroPack#-faq
+    about: Check the FAQ for common questions
+  - name: 🔧 Troubleshooting Guide
+    url: https://github.com/YOUR_USERNAME/NitroPack#-troubleshooting
+    about: Try these troubleshooting steps first
+  - name: 🚫 Piracy Policy
+    url: https://github.com/YOUR_USERNAME/NitroPack#%EF%B8%8F-important-legal-disclaimer
+    about: We do NOT support piracy. Piracy-related issues will be closed.

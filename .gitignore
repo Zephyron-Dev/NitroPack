@@ -1,0 +1,61 @@
+# =============================================================================
+# NitroPack - Git Ignore Configuration
+# =============================================================================
+
+# Build outputs
+build/
+dist/
+output/
+*.zip
+*.sha256
+*.md5
+
+# Downloaded components
+downloads/
+extracted/
+pack/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+.cache/
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+Desktop.ini
+
+# IDE / Editor files
+.idea/
+.vscode/
+*.swp
+*.swo
+*~
+.project
+.settings/
+
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+.Python
+env/
+venv/
+.env
+
+# Node (if any web tools added later)
+node_modules/
+npm-debug.log
+
+# Secrets (never commit these!)
+*.pem
+*.key
+secrets/
+.env.local
+.env.*.local

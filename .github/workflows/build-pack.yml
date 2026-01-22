@@ -1,0 +1,699 @@
+# =============================================================================
+# NitroPack - Automated CFW Bundle Builder
+# =============================================================================
+# This workflow automatically fetches the latest releases of all CFW components,
+# assembles them into an SD-card-ready ZIP, and publishes as a GitHub Release.
+#
+# Triggers:
+#   - Weekly (every Sunday at 00:00 UTC)
+#   - Manual dispatch (workflow_dispatch)
+#   - Push to main branch (for testing)
+#
+# DISCLAIMER: This is for educational purposes only. Own your games!
+# =============================================================================
+
+name: 🚀 Build NitroPack
+
+on:
+  # Run weekly on Sunday at midnight UTC
+  schedule:
+    - cron: '0 0 * * 0'
+  
+  # Allow manual trigger from GitHub Actions tab
+  workflow_dispatch:
+    inputs:
+      version_override:
+        description: 'Override version (leave empty for auto)'
+        required: false
+        default: ''
+      prerelease:
+        description: 'Mark as pre-release'
+        required: false
+        default: 'false'
+        type: boolean
+      skip_tinfoil:
+        description: 'Skip Tinfoil (use if download fails)'
+        required: false
+        default: 'false'
+        type: boolean
+
+  # Build on push to main (for testing)
+  push:
+    branches:
+      - main
+    paths:
+      - 'scripts/**'
+      - '.github/workflows/**'
+      - 'configs/**'
+
+# Prevent concurrent builds
+concurrency:
+  group: build-pack
+  cancel-in-progress: true
+
+env:
+  PACK_NAME: NitroPack
+  # Component GitHub repos (owner/repo format)
+  ATMOSPHERE_REPO: Atmosphere-NX/Atmosphere
+  HEKATE_REPO: CTCaer/hekate
+  SIGPATCHES_REPO: ITotalJustice/patches
+  DBI_REPO: rashevskyv/dbi
+  NXTHEMES_REPO: exelix11/SwitchThemeInjector
+  GOLDLEAF_REPO: XorTroll/Goldleaf
+  JKSV_REPO: J-D-K/JKSV
+  NXSHELL_REPO: joel16/NX-Shell
+
+jobs:
+  build:
+    name: 🔨 Build Pack
+    runs-on: ubuntu-latest
+    
+    outputs:
+      version: ${{ steps.version.outputs.version }}
+      atmosphere_version: ${{ steps.fetch_versions.outputs.atmosphere }}
+      hekate_version: ${{ steps.fetch_versions.outputs.hekate }}
+      
+    steps:
+      # =========================================================================
+      # SETUP
+      # =========================================================================
+      - name: 📥 Checkout Repository
+        uses: actions/checkout@v4
+        
+      - name: 🔧 Setup Environment
+        run: |
+          # Install required tools
+          sudo apt-get update
+          sudo apt-get install -y unzip p7zip-full jq curl wget
+          
+          # Create working directories
+          mkdir -p build/{downloads,extracted,output}
+          mkdir -p build/output/{atmosphere,bootloader,config,switch}
+          
+          echo "✅ Environment ready"
+
+      # =========================================================================
+      # FETCH LATEST VERSIONS
+      # =========================================================================
+      - name: 📊 Fetch Latest Release Versions
+        id: fetch_versions
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "🔍 Fetching latest release information..."
+          
+          # Function to get latest release tag from GitHub API
+          get_latest_release() {
+            local repo=$1
+            local release_info=$(curl -sL \
+              -H "Authorization: Bearer $GH_TOKEN" \
+              -H "Accept: application/vnd.github+json" \
+              "https://api.github.com/repos/${repo}/releases/latest")
+            echo "$release_info" | jq -r '.tag_name // empty'
+          }
+          
+          # Fetch all versions
+          ATMO_VER=$(get_latest_release "$ATMOSPHERE_REPO")
+          HEKATE_VER=$(get_latest_release "$HEKATE_REPO")
+          SIGPATCH_VER=$(get_latest_release "$SIGPATCHES_REPO")
+          DBI_VER=$(get_latest_release "$DBI_REPO")
+          NXTHEMES_VER=$(get_latest_release "$NXTHEMES_REPO")
+          GOLDLEAF_VER=$(get_latest_release "$GOLDLEAF_REPO")
+          JKSV_VER=$(get_latest_release "$JKSV_REPO")
+          NXSHELL_VER=$(get_latest_release "$NXSHELL_REPO")
+          
+          # Output versions
+          echo "atmosphere=${ATMO_VER}" >> $GITHUB_OUTPUT
+          echo "hekate=${HEKATE_VER}" >> $GITHUB_OUTPUT
+          echo "sigpatches=${SIGPATCH_VER}" >> $GITHUB_OUTPUT
+          echo "dbi=${DBI_VER}" >> $GITHUB_OUTPUT
+          echo "nxthemes=${NXTHEMES_VER}" >> $GITHUB_OUTPUT
+          echo "goldleaf=${GOLDLEAF_VER}" >> $GITHUB_OUTPUT
+          echo "jksv=${JKSV_VER}" >> $GITHUB_OUTPUT
+          echo "nxshell=${NXSHELL_VER}" >> $GITHUB_OUTPUT
+          
+          # Print summary
+          echo ""
+          echo "📦 Component Versions:"
+          echo "  Atmosphere:      ${ATMO_VER}"
+          echo "  Hekate:          ${HEKATE_VER}"
+          echo "  Sigpatches:      ${SIGPATCH_VER}"
+          echo "  DBI:             ${DBI_VER}"
+          echo "  NXThemeInstaller:${NXTHEMES_VER}"
+          echo "  Goldleaf:        ${GOLDLEAF_VER}"
+          echo "  JKSV:            ${JKSV_VER}"
+          echo "  NX-Shell:        ${NXSHELL_VER}"
+
+      # =========================================================================
+      # DOWNLOAD COMPONENTS
+      # =========================================================================
+      - name: 📥 Download Atmosphere
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📥 Downloading Atmosphere..."
+          cd build/downloads
+          
+          # Get download URL for atmosphere zip
+          RELEASE_INFO=$(curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${ATMOSPHERE_REPO}/releases/latest")
+          
+          # Download atmosphere-*.zip (full package)
+          ATMO_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("atmosphere-.*\\.zip$")) | .browser_download_url')
+          FUSEE_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name == "fusee.bin") | .browser_download_url')
+          
+          if [ -n "$ATMO_URL" ]; then
+            wget -q --show-progress -O atmosphere.zip "$ATMO_URL"
+            echo "✅ Downloaded Atmosphere package"
+          else
+            echo "❌ Failed to find Atmosphere download URL"
+            exit 1
+          fi
+          
+          if [ -n "$FUSEE_URL" ]; then
+            wget -q --show-progress -O fusee.bin "$FUSEE_URL"
+            echo "✅ Downloaded fusee.bin payload"
+          fi
+
+      - name: 📥 Download Hekate
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📥 Downloading Hekate..."
+          cd build/downloads
+          
+          RELEASE_INFO=$(curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${HEKATE_REPO}/releases/latest")
+          
+          # Download hekate_ctcaer_*.zip
+          HEKATE_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("hekate_ctcaer.*\\.zip$")) | .browser_download_url')
+          
+          if [ -n "$HEKATE_URL" ]; then
+            wget -q --show-progress -O hekate.zip "$HEKATE_URL"
+            echo "✅ Downloaded Hekate"
+          else
+            echo "❌ Failed to find Hekate download URL"
+            exit 1
+          fi
+
+      - name: 📥 Download Sigpatches
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📥 Downloading Sigpatches..."
+          cd build/downloads
+          
+          RELEASE_INFO=$(curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${SIGPATCHES_REPO}/releases/latest")
+          
+          # Download fusee.zip (sigpatches for fusee)
+          SIGPATCH_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name == "fusee.zip") | .browser_download_url')
+          
+          if [ -n "$SIGPATCH_URL" ]; then
+            wget -q --show-progress -O sigpatches.zip "$SIGPATCH_URL"
+            echo "✅ Downloaded Sigpatches"
+          else
+            echo "⚠️ Sigpatches not found, trying alternative..."
+            # Try alternative sigpatches source
+            SIGPATCH_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[0].browser_download_url')
+            if [ -n "$SIGPATCH_URL" ] && [ "$SIGPATCH_URL" != "null" ]; then
+              wget -q --show-progress -O sigpatches.zip "$SIGPATCH_URL"
+              echo "✅ Downloaded Sigpatches (alternative)"
+            else
+              echo "❌ Failed to download sigpatches"
+              exit 1
+            fi
+          fi
+
+      - name: 📥 Download Tinfoil
+        if: ${{ github.event.inputs.skip_tinfoil != 'true' }}
+        continue-on-error: true
+        run: |
+          echo "📥 Downloading Tinfoil..."
+          cd build/downloads
+          
+          # Tinfoil is distributed via tinfoil.io, not GitHub
+          # Using self-installer NRO method
+          TINFOIL_URL="https://tinfoil.io/repo/Tinfoil%20Self%20Installer%20%5B050000BADDAD0000%5D%5B16.0%5D%5Bv0%5D.nsp"
+          
+          # Alternative: Direct NRO from their CDN
+          wget -q --show-progress -O tinfoil.nro "https://tinfoil.media/repo/Tinfoil.nro" || {
+            echo "⚠️ Tinfoil download failed, will skip"
+            touch tinfoil_failed
+          }
+          
+          if [ -f tinfoil.nro ]; then
+            echo "✅ Downloaded Tinfoil"
+          fi
+
+      - name: 📥 Download DBI
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📥 Downloading DBI..."
+          cd build/downloads
+          
+          RELEASE_INFO=$(curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${DBI_REPO}/releases/latest")
+          
+          DBI_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("DBI\\.nro$")) | .browser_download_url')
+          
+          if [ -n "$DBI_URL" ] && [ "$DBI_URL" != "null" ]; then
+            wget -q --show-progress -O DBI.nro "$DBI_URL"
+            echo "✅ Downloaded DBI"
+          else
+            # Try zip package
+            DBI_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("\\.zip$")) | .browser_download_url' | head -1)
+            if [ -n "$DBI_URL" ] && [ "$DBI_URL" != "null" ]; then
+              wget -q --show-progress -O dbi.zip "$DBI_URL"
+              echo "✅ Downloaded DBI package"
+            else
+              echo "⚠️ DBI not found, continuing..."
+            fi
+          fi
+
+      - name: 📥 Download NXThemeInstaller
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📥 Downloading NXThemeInstaller..."
+          cd build/downloads
+          
+          RELEASE_INFO=$(curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${NXTHEMES_REPO}/releases/latest")
+          
+          NXTHEMES_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("NXThemesInstaller\\.nro$")) | .browser_download_url')
+          
+          if [ -n "$NXTHEMES_URL" ] && [ "$NXTHEMES_URL" != "null" ]; then
+            wget -q --show-progress -O NXThemesInstaller.nro "$NXTHEMES_URL"
+            echo "✅ Downloaded NXThemeInstaller"
+          else
+            echo "⚠️ NXThemeInstaller not found, continuing..."
+          fi
+
+      - name: 📥 Download Goldleaf
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📥 Downloading Goldleaf..."
+          cd build/downloads
+          
+          RELEASE_INFO=$(curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${GOLDLEAF_REPO}/releases/latest")
+          
+          GOLDLEAF_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("Goldleaf\\.nro$")) | .browser_download_url')
+          
+          if [ -n "$GOLDLEAF_URL" ] && [ "$GOLDLEAF_URL" != "null" ]; then
+            wget -q --show-progress -O Goldleaf.nro "$GOLDLEAF_URL"
+            echo "✅ Downloaded Goldleaf"
+          else
+            echo "⚠️ Goldleaf not found, continuing..."
+          fi
+
+      - name: 📥 Download JKSV
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📥 Downloading JKSV..."
+          cd build/downloads
+          
+          RELEASE_INFO=$(curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${JKSV_REPO}/releases/latest")
+          
+          JKSV_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("JKSV\\.nro$")) | .browser_download_url')
+          
+          if [ -n "$JKSV_URL" ] && [ "$JKSV_URL" != "null" ]; then
+            wget -q --show-progress -O JKSV.nro "$JKSV_URL"
+            echo "✅ Downloaded JKSV"
+          else
+            echo "⚠️ JKSV not found, continuing..."
+          fi
+
+      - name: 📥 Download NX-Shell
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📥 Downloading NX-Shell..."
+          cd build/downloads
+          
+          RELEASE_INFO=$(curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${NXSHELL_REPO}/releases/latest")
+          
+          NXSHELL_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("NX-Shell\\.nro$")) | .browser_download_url')
+          
+          if [ -n "$NXSHELL_URL" ] && [ "$NXSHELL_URL" != "null" ]; then
+            wget -q --show-progress -O NX-Shell.nro "$NXSHELL_URL"
+            echo "✅ Downloaded NX-Shell"
+          else
+            echo "⚠️ NX-Shell not found, continuing..."
+          fi
+
+      # =========================================================================
+      # EXTRACT & ASSEMBLE
+      # =========================================================================
+      - name: 📦 Extract & Assemble Pack
+        run: |
+          echo "📦 Assembling NitroPack..."
+          cd build
+          
+          # Extract Atmosphere (provides base structure)
+          echo "  → Extracting Atmosphere..."
+          unzip -q -o downloads/atmosphere.zip -d output/
+          
+          # Extract Hekate
+          echo "  → Extracting Hekate..."
+          unzip -q -o downloads/hekate.zip -d output/
+          
+          # Extract Sigpatches (overlay on atmosphere)
+          echo "  → Extracting Sigpatches..."
+          unzip -q -o downloads/sigpatches.zip -d output/
+          
+          # Extract DBI if zip exists
+          if [ -f downloads/dbi.zip ]; then
+            echo "  → Extracting DBI..."
+            unzip -q -o downloads/dbi.zip -d extracted/dbi/
+            mkdir -p output/switch/DBI
+            find extracted/dbi -name "*.nro" -exec cp {} output/switch/DBI/ \;
+            find extracted/dbi -name "*.ini" -exec cp {} output/switch/DBI/ \; 2>/dev/null || true
+          elif [ -f downloads/DBI.nro ]; then
+            mkdir -p output/switch/DBI
+            cp downloads/DBI.nro output/switch/DBI/
+          fi
+          
+          # Copy standalone NRO files
+          echo "  → Organizing homebrew apps..."
+          
+          if [ -f downloads/tinfoil.nro ]; then
+            mkdir -p output/switch/tinfoil
+            cp downloads/tinfoil.nro output/switch/tinfoil/tinfoil.nro
+          fi
+          
+          if [ -f downloads/NXThemesInstaller.nro ]; then
+            mkdir -p output/switch/NXThemesInstaller
+            cp downloads/NXThemesInstaller.nro output/switch/NXThemesInstaller/
+          fi
+          
+          if [ -f downloads/Goldleaf.nro ]; then
+            mkdir -p output/switch/Goldleaf
+            cp downloads/Goldleaf.nro output/switch/Goldleaf/
+          fi
+          
+          if [ -f downloads/JKSV.nro ]; then
+            mkdir -p output/switch/JKSV
+            cp downloads/JKSV.nro output/switch/JKSV/
+          fi
+          
+          if [ -f downloads/NX-Shell.nro ]; then
+            mkdir -p output/switch/NX-Shell
+            cp downloads/NX-Shell.nro output/switch/NX-Shell/
+          fi
+          
+          # Copy fusee.bin to payloads
+          if [ -f downloads/fusee.bin ]; then
+            mkdir -p output/bootloader/payloads
+            cp downloads/fusee.bin output/bootloader/payloads/
+          fi
+          
+          echo "✅ Base assembly complete"
+
+      - name: 📝 Apply Custom Configs
+        run: |
+          echo "📝 Applying NitroPack configurations..."
+          cd build/output
+          
+          # Create hekate_ipl.ini with NitroPack branding
+          cat > bootloader/hekate_ipl.ini << 'EOF'
+          # NitroPack - Hekate Configuration
+          # https://github.com/YOUR_USERNAME/NitroPack
+          
+          [config]
+          autoboot=0
+          autoboot_list=0
+          bootwait=3
+          backlight=100
+          autohosoff=0
+          autonogc=1
+          updater2p=1
+          bootprotect=0
+          
+          [Atmosphere (CFW)]
+          payload=bootloader/payloads/fusee.bin
+          icon=bootloader/res/icon_payload.bmp
+          
+          [Stock (OFW)]
+          fss0=atmosphere/package3
+          stock=1
+          emummc_force_disable=1
+          icon=bootloader/res/icon_switch.bmp
+          EOF
+          
+          # Create exosphere.ini for blanked prodinfo
+          cat > exosphere.ini << 'EOF'
+          # NitroPack - Exosphere Configuration
+          # Blanks serial number for additional ban protection
+          # NOTE: This is NOT a guarantee against bans!
+          
+          [exosphere]
+          debugmode=1
+          debugmode_user=0
+          disable_user_exception_handlers=0
+          enable_user_pmu_access=0
+          blank_prodinfo_sysmmc=0
+          blank_prodinfo_emummc=1
+          allow_writing_to_cal_sysmmc=0
+          log_port=0
+          log_baud_rate=115200
+          log_inverted=0
+          EOF
+          
+          # Create atmosphere config directory and files
+          mkdir -p atmosphere/config
+          
+          # System settings
+          cat > atmosphere/config/system_settings.ini << 'EOF'
+          # NitroPack - Atmosphere System Settings
+          
+          [atmosphere]
+          ; Power menu reboot options
+          power_menu_reboot_function = payload
+          
+          [eupld]
+          ; Disable error uploads to Nintendo
+          upload_enabled = u8!0x0
+          
+          [ro]
+          ; Enable easier homebrewing
+          ease_nro_restriction = u8!0x1
+          EOF
+          
+          # Override config for homebrew menu
+          cat > atmosphere/config/override_config.ini << 'EOF'
+          # NitroPack - Override Configuration
+          
+          [hbl_config]
+          ; Open homebrew menu by holding R and launching Album
+          program_id=010000000000100D
+          override_any_app=true
+          override_any_app_key=R
+          override_any_app_address_space=39_bit
+          EOF
+          
+          # Create hosts directory for DNS blocking (empty by default)
+          mkdir -p atmosphere/hosts
+          cat > atmosphere/hosts/emummc.txt << 'EOF'
+          # NitroPack - DNS Blocking (emuMMC)
+          # Uncomment lines below to block Nintendo servers
+          # This adds another layer of ban protection
+          
+          # Nintendo servers (uncomment to block)
+          #127.0.0.1 *nintendo.*
+          #127.0.0.1 *nintendo-europe.com
+          #127.0.0.1 *nintendoswitch.*
+          #127.0.0.1 95.216.149.205
+          #127.0.0.1 *conntest.nintendowifi.net
+          #127.0.0.1 *ctest.cdn.nintendo.net
+          EOF
+          
+          echo "✅ Configurations applied"
+
+      - name: 📋 Create Version Info
+        id: version
+        run: |
+          echo "📋 Creating version information..."
+          cd build/output
+          
+          # Get current date for version
+          BUILD_DATE=$(date +%Y%m%d)
+          
+          # Use override version if provided, otherwise auto-generate
+          if [ -n "${{ github.event.inputs.version_override }}" ]; then
+            VERSION="${{ github.event.inputs.version_override }}"
+          else
+            # Version format: vYYYY.MM.DD
+            VERSION="v$(date +%Y.%m.%d)"
+          fi
+          
+          echo "version=${VERSION}" >> $GITHUB_OUTPUT
+          
+          # Create version file
+          cat > NitroPack_Version.txt << EOF
+          ╔══════════════════════════════════════════════════════════════════╗
+          ║                         N I T R O P A C K                        ║
+          ║               Ultimate Nintendo Switch CFW Bundle                ║
+          ╠══════════════════════════════════════════════════════════════════╣
+          ║  Version:     ${VERSION}
+          ║  Build Date:  $(date +"%Y-%m-%d %H:%M:%S UTC")
+          ╠══════════════════════════════════════════════════════════════════╣
+          ║  COMPONENT VERSIONS                                              ║
+          ╠══════════════════════════════════════════════════════════════════╣
+          ║  Atmosphere:        ${{ steps.fetch_versions.outputs.atmosphere }}
+          ║  Hekate:            ${{ steps.fetch_versions.outputs.hekate }}
+          ║  Sigpatches:        ${{ steps.fetch_versions.outputs.sigpatches }}
+          ║  DBI:               ${{ steps.fetch_versions.outputs.dbi }}
+          ║  NXThemeInstaller:  ${{ steps.fetch_versions.outputs.nxthemes }}
+          ║  Goldleaf:          ${{ steps.fetch_versions.outputs.goldleaf }}
+          ║  JKSV:              ${{ steps.fetch_versions.outputs.jksv }}
+          ║  NX-Shell:          ${{ steps.fetch_versions.outputs.nxshell }}
+          ╠══════════════════════════════════════════════════════════════════╣
+          ║  DISCLAIMER: For educational purposes only. Own your games!      ║
+          ║  https://github.com/YOUR_USERNAME/NitroPack                      ║
+          ╚══════════════════════════════════════════════════════════════════╝
+          EOF
+          
+          echo "✅ Version: ${VERSION}"
+
+      # =========================================================================
+      # PACKAGE & RELEASE
+      # =========================================================================
+      - name: 📦 Create ZIP Package
+        run: |
+          echo "📦 Creating final ZIP package..."
+          cd build/output
+          
+          VERSION="${{ steps.version.outputs.version }}"
+          ZIP_NAME="${PACK_NAME}-${VERSION}.zip"
+          
+          # Create ZIP with maximum compression
+          zip -r -9 "../../${ZIP_NAME}" .
+          
+          # Calculate checksums
+          cd ../..
+          sha256sum "${ZIP_NAME}" > "${ZIP_NAME}.sha256"
+          md5sum "${ZIP_NAME}" > "${ZIP_NAME}.md5"
+          
+          echo "✅ Package created: ${ZIP_NAME}"
+          echo "   Size: $(du -h ${ZIP_NAME} | cut -f1)"
+          
+          # List contents summary
+          echo ""
+          echo "📁 Package contents:"
+          unzip -l "${ZIP_NAME}" | tail -1
+
+      - name: 📤 Upload Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: NitroPack-${{ steps.version.outputs.version }}
+          path: |
+            NitroPack-*.zip
+            NitroPack-*.sha256
+            NitroPack-*.md5
+          retention-days: 30
+
+      - name: 🏷️ Create Release
+        if: github.event_name != 'push'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.version.outputs.version }}
+          name: "🎮 NitroPack ${{ steps.version.outputs.version }}"
+          draft: false
+          prerelease: ${{ github.event.inputs.prerelease == 'true' }}
+          generate_release_notes: false
+          body: |
+            # 🎮 NitroPack ${{ steps.version.outputs.version }}
+            
+            **The goated all-in-one CFW bundle for Nintendo Switch**
+            
+            ---
+            
+            ## 📦 Component Versions
+            
+            | Component | Version |
+            |-----------|---------|
+            | Atmosphere | `${{ steps.fetch_versions.outputs.atmosphere }}` |
+            | Hekate | `${{ steps.fetch_versions.outputs.hekate }}` |
+            | Sigpatches | `${{ steps.fetch_versions.outputs.sigpatches }}` |
+            | DBI | `${{ steps.fetch_versions.outputs.dbi }}` |
+            | NXThemeInstaller | `${{ steps.fetch_versions.outputs.nxthemes }}` |
+            | Goldleaf | `${{ steps.fetch_versions.outputs.goldleaf }}` |
+            | JKSV | `${{ steps.fetch_versions.outputs.jksv }}` |
+            | NX-Shell | `${{ steps.fetch_versions.outputs.nxshell }}` |
+            
+            ---
+            
+            ## 📥 Installation
+            
+            1. Download `NitroPack-${{ steps.version.outputs.version }}.zip` below
+            2. Extract to the **root** of your SD card
+            3. Inject `hekate_ctcaer_*.bin` payload via RCM
+            4. Boot into Atmosphere CFW
+            
+            See [README](https://github.com/${{ github.repository }}#-installation) for detailed instructions.
+            
+            ---
+            
+            ## ⚠️ Disclaimer
+            
+            This software is provided for **educational purposes only**. 
+            - You MUST own legitimate copies of any games you play
+            - Using CFW carries risk of console ban
+            - The maintainers are NOT responsible for any damage or legal issues
+            
+            **Always back up your NAND before installing CFW!**
+            
+            ---
+            
+            ## 🔐 Checksums
+            
+            Verify your download integrity using the `.sha256` or `.md5` files.
+            
+            ```
+            sha256sum -c NitroPack-${{ steps.version.outputs.version }}.zip.sha256
+            ```
+          files: |
+            NitroPack-*.zip
+            NitroPack-*.sha256
+            NitroPack-*.md5
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      # =========================================================================
+      # CLEANUP & SUMMARY
+      # =========================================================================
+      - name: 📊 Build Summary
+        run: |
+          echo ""
+          echo "╔══════════════════════════════════════════════════════════════════╗"
+          echo "║                    BUILD COMPLETE ✅                             ║"
+          echo "╠══════════════════════════════════════════════════════════════════╣"
+          echo "║  Version:     ${{ steps.version.outputs.version }}"
+          echo "║  Atmosphere:  ${{ steps.fetch_versions.outputs.atmosphere }}"
+          echo "║  Hekate:      ${{ steps.fetch_versions.outputs.hekate }}"
+          echo "╠══════════════════════════════════════════════════════════════════╣"
+          echo "║  Package Size: $(du -h NitroPack-*.zip | cut -f1)"
+          echo "╚══════════════════════════════════════════════════════════════════╝"
