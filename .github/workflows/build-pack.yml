@@ -428,6 +428,13 @@ jobs:
             cp downloads/fusee.bin output/bootloader/payloads/
           fi
           
+          # Copy Hekate payload to root as payload.bin (for modchips/autoboot)
+          HEKATE_BIN=$(find output/bootloader -name "hekate_ctcaer_*.bin" 2>/dev/null | head -1)
+          if [ -n "$HEKATE_BIN" ]; then
+            cp "$HEKATE_BIN" output/payload.bin
+            echo "✅ Copied Hekate to payload.bin"
+          fi
+          
           echo "✅ Base assembly complete"
 
       - name: 📝 Apply Custom Configs

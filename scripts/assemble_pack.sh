@@ -434,6 +434,13 @@ extract_and_assemble() {
         cp "$DOWNLOADS/fusee.bin" "$PACK_DIR/bootloader/payloads/"
     fi
     
+    # Copy Hekate payload to root as payload.bin (for modchips/autoboot)
+    HEKATE_BIN=$(find "$PACK_DIR/bootloader" -name "hekate_ctcaer_*.bin" 2>/dev/null | head -1)
+    if [ -n "$HEKATE_BIN" ]; then
+        cp "$HEKATE_BIN" "$PACK_DIR/payload.bin"
+        log_success "Copied Hekate to payload.bin"
+    fi
+    
     log_success "Base assembly complete"
 }
 

@@ -120,6 +120,7 @@ SD Card Root/
 │   └── ...
 ├── hbmenu.nro           # Homebrew menu
 ├── exosphere.ini        # Exosphere config
+├── payload.bin          # Hekate payload (for modchips/injectors)
 └── boot.dat             # Hekate payload (for modchips)
 ```
 
