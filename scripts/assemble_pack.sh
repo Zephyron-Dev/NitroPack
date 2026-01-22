@@ -52,6 +52,7 @@ declare -A REPOS=(
     ["nxshell"]="joel16/NX-Shell"
     ["checkpoint"]="BernardoGiordano/Checkpoint"
     ["hbappstore"]="fortheusers/hb-appstore"
+    ["oc_switchcraft"]="halop/OC-Switchcraft-EOS"
 )
 
 # Version tracking
@@ -397,6 +398,23 @@ download_hbappstore() {
     fi
 }
 
+download_oc_switchcraft() {
+    log_info "Fetching OC Switchcraft EOS release info..."
+    
+    local release_info=$(get_latest_release "${REPOS[oc_switchcraft]}")
+    local version=$(get_release_tag "$release_info")
+    VERSIONS["oc_switchcraft"]=$version
+    
+    log_info "OC Switchcraft EOS version: $version"
+    
+    local oc_url=$(get_asset_url "$release_info" "\\.zip$")
+    if [ -n "$oc_url" ] && [ "$oc_url" != "null" ]; then
+        download_file "$oc_url" "$DOWNLOADS/oc-switchcraft.zip" "OC Switchcraft EOS"
+    else
+        log_warning "Could not find OC Switchcraft EOS download URL"
+    fi
+}
+
 # =============================================================================
 # Assembly Functions
 # =============================================================================
@@ -420,6 +438,12 @@ extract_and_assemble() {
     if [ -f "$DOWNLOADS/nx-ovlloader.zip" ]; then
         log_info "  → Extracting nx-ovlloader..."
         unzip -q -o "$DOWNLOADS/nx-ovlloader.zip" -d "$PACK_DIR/"
+    fi
+    
+    # Extract OC Switchcraft EOS (overclocking)
+    if [ -f "$DOWNLOADS/oc-switchcraft.zip" ]; then
+        log_info "  → Extracting OC Switchcraft EOS..."
+        unzip -q -o "$DOWNLOADS/oc-switchcraft.zip" -d "$PACK_DIR/"
     fi
     
     # Extract DBI if zip exists
@@ -625,6 +649,7 @@ create_version_file() {
 ║  NX-Shell:          ${VERSIONS[nxshell]:-N/A}
 ║  Checkpoint:        ${VERSIONS[checkpoint]:-N/A}
 ║  HB App Store:      ${VERSIONS[hbappstore]:-N/A}
+║  OC Switchcraft:    ${VERSIONS[oc_switchcraft]:-N/A}
 ╠══════════════════════════════════════════════════════════════════╣
 ║  DISCLAIMER: For educational purposes only. Own your games!      ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -734,6 +759,7 @@ main() {
     download_nxshell
     download_checkpoint
     download_hbappstore
+    download_oc_switchcraft
     
     echo ""
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════════${NC}"

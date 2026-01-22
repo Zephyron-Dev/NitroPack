@@ -48,6 +48,7 @@ NitroPack bundles the latest versions of essential CFW components:
 | **NX-Shell** | File browser | [joel16/NX-Shell](https://github.com/joel16/NX-Shell) |
 | **Checkpoint** | Save data manager | [BernardoGiordano/Checkpoint](https://github.com/BernardoGiordano/Checkpoint) |
 | **HB App Store** | Homebrew app store | [fortheusers/hb-appstore](https://github.com/fortheusers/hb-appstore) |
+| **OC Switchcraft EOS** | CPU/GPU/RAM overclocking toolkit | [halop/OC-Switchcraft-EOS](https://github.com/halop/OC-Switchcraft-EOS) |
 | **Homebrew Menu** | Included with Atmosphere | Built-in |
 
 ### Pre-configured Files
@@ -148,6 +149,13 @@ Tesla allows you to:
 - Use system tools without leaving your game
 - Install additional .ovl overlays in `switch/.overlays/`
 
+### Overclocking (OC Switchcraft EOS)
+NitroPack includes [OC Switchcraft EOS](https://github.com/halop/OC-Switchcraft-EOS) for CPU/GPU/RAM overclocking.
+
+Access via Tesla Menu (**L + Down + R3**) → Select the OC overlay.
+
+> ⚠️ **Warning:** Overclocking can increase heat, battery drain, and potentially cause instability. Use at your own risk!
+
 ### Blank Prodinfo (emuMMC recommended)
 The included `exosphere.ini` blanks your console's serial number when booting CFW, adding a layer of protection against bans. **However, this is NOT foolproof.**
 
@@ -223,6 +231,7 @@ NitroPack is a compilation of incredible work by the Switch homebrew community:
 - **[joel16](https://github.com/joel16)** - NX-Shell
 - **[BernardoGiordano](https://github.com/BernardoGiordano)** - Checkpoint
 - **[fortheusers](https://github.com/fortheusers)** - HB App Store
+- **[halop](https://github.com/halop)** - OC Switchcraft EOS
 
 **This project would not exist without their dedication to the homebrew scene. ❤️**
 

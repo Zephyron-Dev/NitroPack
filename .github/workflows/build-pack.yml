@@ -64,6 +64,7 @@ env:
   NXSHELL_REPO: joel16/NX-Shell
   CHECKPOINT_REPO: BernardoGiordano/Checkpoint
   HBAPPSTORE_REPO: fortheusers/hb-appstore
+  OC_SWITCHCRAFT_REPO: halop/OC-Switchcraft-EOS
 
 jobs:
   build:
@@ -126,6 +127,7 @@ jobs:
           NXSHELL_VER=$(get_latest_release "$NXSHELL_REPO")
           CHECKPOINT_VER=$(get_latest_release "$CHECKPOINT_REPO")
           HBAPPSTORE_VER=$(get_latest_release "$HBAPPSTORE_REPO")
+          OC_SWITCHCRAFT_VER=$(get_latest_release "$OC_SWITCHCRAFT_REPO")
           
           # Output versions
           echo "atmosphere=${ATMO_VER}" >> $GITHUB_OUTPUT
@@ -139,6 +141,7 @@ jobs:
           echo "nxshell=${NXSHELL_VER}" >> $GITHUB_OUTPUT
           echo "checkpoint=${CHECKPOINT_VER}" >> $GITHUB_OUTPUT
           echo "hbappstore=${HBAPPSTORE_VER}" >> $GITHUB_OUTPUT
+          echo "oc_switchcraft=${OC_SWITCHCRAFT_VER}" >> $GITHUB_OUTPUT
           
           # Print summary
           echo ""
@@ -154,6 +157,7 @@ jobs:
           echo "  NX-Shell:        ${NXSHELL_VER}"
           echo "  Checkpoint:      ${CHECKPOINT_VER}"
           echo "  HB App Store:    ${HBAPPSTORE_VER}"
+          echo "  OC Switchcraft:  ${OC_SWITCHCRAFT_VER}"
 
       # =========================================================================
       # DOWNLOAD COMPONENTS
@@ -409,6 +413,28 @@ jobs:
             echo "⚠️ HB App Store not found, continuing..."
           fi
 
+      - name: 📥 Download OC Switchcraft EOS
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📥 Downloading OC Switchcraft EOS..."
+          cd build/downloads
+          
+          RELEASE_INFO=$(curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${OC_SWITCHCRAFT_REPO}/releases/latest")
+          
+          # Download the OC Toolkit zip
+          OC_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("\\.zip$")) | .browser_download_url' | head -1)
+          
+          if [ -n "$OC_URL" ] && [ "$OC_URL" != "null" ]; then
+            wget -q --show-progress -O oc-switchcraft.zip "$OC_URL"
+            echo "✅ Downloaded OC Switchcraft EOS"
+          else
+            echo "⚠️ OC Switchcraft EOS not found, continuing..."
+          fi
+
       # =========================================================================
       # EXTRACT & ASSEMBLE
       # =========================================================================
@@ -429,6 +455,12 @@ jobs:
           if [ -f downloads/nx-ovlloader.zip ]; then
             echo "  → Extracting nx-ovlloader..."
             unzip -q -o downloads/nx-ovlloader.zip -d output/
+          fi
+          
+          # Extract OC Switchcraft EOS (overclocking)
+          if [ -f downloads/oc-switchcraft.zip ]; then
+            echo "  → Extracting OC Switchcraft EOS..."
+            unzip -q -o downloads/oc-switchcraft.zip -d output/
           fi
           
           # Extract DBI if zip exists
@@ -646,6 +678,7 @@ jobs:
           ║  NX-Shell:          ${{ steps.fetch_versions.outputs.nxshell }}
           ║  Checkpoint:        ${{ steps.fetch_versions.outputs.checkpoint }}
           ║  HB App Store:      ${{ steps.fetch_versions.outputs.hbappstore }}
+          ║  OC Switchcraft:    ${{ steps.fetch_versions.outputs.oc_switchcraft }}
           ╠══════════════════════════════════════════════════════════════════╣
           ║  DISCLAIMER: For educational purposes only. Own your games!      ║
           ║  https://github.com/Zephyron-Dev/NitroPack                      ║
@@ -721,6 +754,7 @@ jobs:
             | NX-Shell | `${{ steps.fetch_versions.outputs.nxshell }}` |
             | Checkpoint | `${{ steps.fetch_versions.outputs.checkpoint }}` |
             | HB App Store | `${{ steps.fetch_versions.outputs.hbappstore }}` |
+            | OC Switchcraft EOS | `${{ steps.fetch_versions.outputs.oc_switchcraft }}` |
             
             ---
             
