@@ -31,11 +31,6 @@ on:
         required: false
         default: 'false'
         type: boolean
-      skip_tinfoil:
-        description: 'Skip Tinfoil (use if download fails)'
-        required: false
-        default: 'false'
-        type: boolean
 
   # Build on push to main (for testing)
   push:
@@ -56,7 +51,8 @@ env:
   # Component GitHub repos (owner/repo format)
   ATMOSPHERE_REPO: Atmosphere-NX/Atmosphere
   HEKATE_REPO: CTCaer/hekate
-  SIGPATCHES_REPO: ITotalJustice/patches
+  TESLA_MENU_REPO: WerWolv/Tesla-Menu
+  OVLLOADER_REPO: WerWolv/nx-ovlloader
   DBI_REPO: rashevskyv/dbi
   NXTHEMES_REPO: exelix11/SwitchThemeInjector
   GOLDLEAF_REPO: XorTroll/Goldleaf
@@ -115,7 +111,8 @@ jobs:
           # Fetch all versions
           ATMO_VER=$(get_latest_release "$ATMOSPHERE_REPO")
           HEKATE_VER=$(get_latest_release "$HEKATE_REPO")
-          SIGPATCH_VER=$(get_latest_release "$SIGPATCHES_REPO")
+          TESLA_VER=$(get_latest_release "$TESLA_MENU_REPO")
+          OVLLOADER_VER=$(get_latest_release "$OVLLOADER_REPO")
           DBI_VER=$(get_latest_release "$DBI_REPO")
           NXTHEMES_VER=$(get_latest_release "$NXTHEMES_REPO")
           GOLDLEAF_VER=$(get_latest_release "$GOLDLEAF_REPO")
@@ -125,7 +122,8 @@ jobs:
           # Output versions
           echo "atmosphere=${ATMO_VER}" >> $GITHUB_OUTPUT
           echo "hekate=${HEKATE_VER}" >> $GITHUB_OUTPUT
-          echo "sigpatches=${SIGPATCH_VER}" >> $GITHUB_OUTPUT
+          echo "tesla=${TESLA_VER}" >> $GITHUB_OUTPUT
+          echo "ovlloader=${OVLLOADER_VER}" >> $GITHUB_OUTPUT
           echo "dbi=${DBI_VER}" >> $GITHUB_OUTPUT
           echo "nxthemes=${NXTHEMES_VER}" >> $GITHUB_OUTPUT
           echo "goldleaf=${GOLDLEAF_VER}" >> $GITHUB_OUTPUT
@@ -137,7 +135,8 @@ jobs:
           echo "📦 Component Versions:"
           echo "  Atmosphere:      ${ATMO_VER}"
           echo "  Hekate:          ${HEKATE_VER}"
-          echo "  Sigpatches:      ${SIGPATCH_VER}"
+          echo "  Tesla Menu:      ${TESLA_VER}"
+          echo "  nx-ovlloader:    ${OVLLOADER_VER}"
           echo "  DBI:             ${DBI_VER}"
           echo "  NXThemeInstaller:${NXTHEMES_VER}"
           echo "  Goldleaf:        ${GOLDLEAF_VER}"
@@ -200,56 +199,48 @@ jobs:
             exit 1
           fi
 
-      - name: 📥 Download Sigpatches
+      - name: 📥 Download Tesla Menu
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "📥 Downloading Sigpatches..."
+          echo "📥 Downloading Tesla Menu..."
           cd build/downloads
           
           RELEASE_INFO=$(curl -sL \
             -H "Authorization: Bearer $GH_TOKEN" \
             -H "Accept: application/vnd.github+json" \
-            "https://api.github.com/repos/${SIGPATCHES_REPO}/releases/latest")
+            "https://api.github.com/repos/${TESLA_MENU_REPO}/releases/latest")
           
-          # Download fusee.zip (sigpatches for fusee)
-          SIGPATCH_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name == "fusee.zip") | .browser_download_url')
+          # Download ovlmenu.ovl
+          TESLA_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("ovlmenu\\.ovl$")) | .browser_download_url')
           
-          if [ -n "$SIGPATCH_URL" ]; then
-            wget -q --show-progress -O sigpatches.zip "$SIGPATCH_URL"
-            echo "✅ Downloaded Sigpatches"
+          if [ -n "$TESLA_URL" ] && [ "$TESLA_URL" != "null" ]; then
+            wget -q --show-progress -O ovlmenu.ovl "$TESLA_URL"
+            echo "✅ Downloaded Tesla Menu"
           else
-            echo "⚠️ Sigpatches not found, trying alternative..."
-            # Try alternative sigpatches source
-            SIGPATCH_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[0].browser_download_url')
-            if [ -n "$SIGPATCH_URL" ] && [ "$SIGPATCH_URL" != "null" ]; then
-              wget -q --show-progress -O sigpatches.zip "$SIGPATCH_URL"
-              echo "✅ Downloaded Sigpatches (alternative)"
-            else
-              echo "❌ Failed to download sigpatches"
-              exit 1
-            fi
+            echo "⚠️ Tesla Menu not found, continuing..."
           fi
 
-      - name: 📥 Download Tinfoil
-        if: ${{ github.event.inputs.skip_tinfoil != 'true' }}
-        continue-on-error: true
+      - name: 📥 Download nx-ovlloader
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
-          echo "📥 Downloading Tinfoil..."
+          echo "📥 Downloading nx-ovlloader..."
           cd build/downloads
           
-          # Tinfoil is distributed via tinfoil.io, not GitHub
-          # Using self-installer NRO method
-          TINFOIL_URL="https://tinfoil.io/repo/Tinfoil%20Self%20Installer%20%5B050000BADDAD0000%5D%5B16.0%5D%5Bv0%5D.nsp"
+          RELEASE_INFO=$(curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${OVLLOADER_REPO}/releases/latest")
           
-          # Alternative: Direct NRO from their CDN
-          wget -q --show-progress -O tinfoil.nro "https://tinfoil.media/repo/Tinfoil.nro" || {
-            echo "⚠️ Tinfoil download failed, will skip"
-            touch tinfoil_failed
-          }
+          # Download nx-ovlloader.zip
+          OVLLOADER_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("nx-ovlloader\\.zip$")) | .browser_download_url')
           
-          if [ -f tinfoil.nro ]; then
-            echo "✅ Downloaded Tinfoil"
+          if [ -n "$OVLLOADER_URL" ] && [ "$OVLLOADER_URL" != "null" ]; then
+            wget -q --show-progress -O nx-ovlloader.zip "$OVLLOADER_URL"
+            echo "✅ Downloaded nx-ovlloader"
+          else
+            echo "⚠️ nx-ovlloader not found, continuing..."
           fi
 
       - name: 📥 Download DBI
@@ -380,9 +371,11 @@ jobs:
           echo "  → Extracting Hekate..."
           unzip -q -o downloads/hekate.zip -d output/
           
-          # Extract Sigpatches (overlay on atmosphere)
-          echo "  → Extracting Sigpatches..."
-          unzip -q -o downloads/sigpatches.zip -d output/
+          # Extract nx-ovlloader (Tesla sysmodule)
+          if [ -f downloads/nx-ovlloader.zip ]; then
+            echo "  → Extracting nx-ovlloader..."
+            unzip -q -o downloads/nx-ovlloader.zip -d output/
+          fi
           
           # Extract DBI if zip exists
           if [ -f downloads/dbi.zip ]; then
@@ -399,9 +392,10 @@ jobs:
           # Copy standalone NRO files
           echo "  → Organizing homebrew apps..."
           
-          if [ -f downloads/tinfoil.nro ]; then
-            mkdir -p output/switch/tinfoil
-            cp downloads/tinfoil.nro output/switch/tinfoil/tinfoil.nro
+          # Setup Tesla Menu overlay
+          if [ -f downloads/ovlmenu.ovl ]; then
+            mkdir -p output/switch/.overlays
+            cp downloads/ovlmenu.ovl output/switch/.overlays/
           fi
           
           if [ -f downloads/NXThemesInstaller.nro ]; then
@@ -514,6 +508,14 @@ jobs:
           override_any_app_address_space=39_bit
           EOF
           
+          # Create Tesla config directory
+          mkdir -p config/tesla
+          cat > config/tesla/config.ini << 'EOF'
+          [tesla]
+          ; Key combo: L + Down + R3 (click right stick)
+          key_combo=L+DDOWN+RSTICK
+          EOF
+          
           # Create hosts directory for DNS blocking (empty by default)
           mkdir -p atmosphere/hosts
           cat > atmosphere/hosts/emummc.txt << 'EOF'
@@ -564,7 +566,8 @@ jobs:
           ╠══════════════════════════════════════════════════════════════════╣
           ║  Atmosphere:        ${{ steps.fetch_versions.outputs.atmosphere }}
           ║  Hekate:            ${{ steps.fetch_versions.outputs.hekate }}
-          ║  Sigpatches:        ${{ steps.fetch_versions.outputs.sigpatches }}
+          ║  Tesla Menu:        ${{ steps.fetch_versions.outputs.tesla }}
+          ║  nx-ovlloader:      ${{ steps.fetch_versions.outputs.ovlloader }}
           ║  DBI:               ${{ steps.fetch_versions.outputs.dbi }}
           ║  NXThemeInstaller:  ${{ steps.fetch_versions.outputs.nxthemes }}
           ║  Goldleaf:          ${{ steps.fetch_versions.outputs.goldleaf }}
@@ -637,7 +640,8 @@ jobs:
             |-----------|---------|
             | Atmosphere | `${{ steps.fetch_versions.outputs.atmosphere }}` |
             | Hekate | `${{ steps.fetch_versions.outputs.hekate }}` |
-            | Sigpatches | `${{ steps.fetch_versions.outputs.sigpatches }}` |
+            | Tesla Menu | `${{ steps.fetch_versions.outputs.tesla }}` |
+            | nx-ovlloader | `${{ steps.fetch_versions.outputs.ovlloader }}` |
             | DBI | `${{ steps.fetch_versions.outputs.dbi }}` |
             | NXThemeInstaller | `${{ steps.fetch_versions.outputs.nxthemes }}` |
             | Goldleaf | `${{ steps.fetch_versions.outputs.goldleaf }}` |
@@ -652,6 +656,8 @@ jobs:
             2. Extract to the **root** of your SD card
             3. Inject `hekate_ctcaer_*.bin` payload via RCM
             4. Boot into Atmosphere CFW
+            
+            **Tesla Menu:** Press `L + Down + R3` in-game to open overlay menu.
             
             See [README](https://github.com/${{ github.repository }}#-installation) for detailed instructions.
             
@@ -694,6 +700,7 @@ jobs:
           echo "║  Version:     ${{ steps.version.outputs.version }}"
           echo "║  Atmosphere:  ${{ steps.fetch_versions.outputs.atmosphere }}"
           echo "║  Hekate:      ${{ steps.fetch_versions.outputs.hekate }}"
+          echo "║  Tesla:       ${{ steps.fetch_versions.outputs.tesla }}"
           echo "╠══════════════════════════════════════════════════════════════════╣"
           echo "║  Package Size: $(du -h NitroPack-*.zip | cut -f1)"
           echo "╚══════════════════════════════════════════════════════════════════╝"

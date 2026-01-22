@@ -39,8 +39,8 @@ NitroPack bundles the latest versions of essential CFW components:
 |-----------|-------------|--------|
 | **Atmosphere** | The leading open-source CFW for Nintendo Switch | [Atmosphere-NX](https://github.com/Atmosphere-NX/Atmosphere) |
 | **Hekate** | Bootloader, payload launcher, and toolbox | [CTCaer/hekate](https://github.com/CTCaer/hekate) |
-| **Sigpatches** | Signature patches for running homebrew | [ITotalJustice/patches](https://github.com/ITotalJustice/patches) |
-| **Tinfoil** | NSP/NSZ/XCI installer and title manager | [Official Site](https://tinfoil.io) |
+| **Tesla Menu** | In-game overlay menu system | [WerWolv/Tesla-Menu](https://github.com/WerWolv/Tesla-Menu) |
+| **nx-ovlloader** | Overlay loader sysmodule for Tesla | [WerWolv/nx-ovlloader](https://github.com/WerWolv/nx-ovlloader) |
 | **DBI** | Advanced file manager and installer | [rashevskyv/dbi](https://github.com/rashevskyv/dbi) |
 | **NXThemeInstaller** | Custom theme installer | [exelix11/SwitchThemeInjector](https://github.com/exelix11/SwitchThemeInjector) |
 | **Goldleaf** | Multi-purpose title manager | [XorTroll/Goldleaf](https://github.com/XorTroll/Goldleaf) |
@@ -103,7 +103,7 @@ SD Card Root/
 ├── atmosphere/           # Atmosphere CFW files
 │   ├── config/          # Atmosphere configuration
 │   ├── contents/        # LayeredFS mods & sysmodules
-│   ├── exefs_patches/   # IPS patches (sigpatches)
+│   │   └── 420000000007E51A/  # nx-ovlloader (Tesla)
 │   ├── kips/            # Kernel patches
 │   └── hosts/           # DNS blocking (optional)
 ├── bootloader/          # Hekate bootloader
@@ -111,9 +111,9 @@ SD Card Root/
 │   ├── payloads/        # Additional payloads
 │   └── sys/             # Hekate system files
 ├── config/              # Global config folder
-│   └── ...
+│   └── tesla/           # Tesla Menu config
 ├── switch/              # Homebrew applications
-│   ├── tinfoil/         # Tinfoil installer
+│   ├── .overlays/       # Tesla overlays folder
 │   ├── DBI/             # DBI file manager
 │   ├── Goldleaf/        # Goldleaf title manager
 │   ├── JKSV/            # Save manager
@@ -128,7 +128,7 @@ SD Card Root/
 ## ⚙️ Configuration
 
 ### Hekate Autoboot
-By default, NitroPack is configured to autoboot into Atmosphere CFW after 5 seconds. To change this:
+By default, NitroPack is configured to autoboot into Atmosphere CFW after 3 seconds. To change this:
 
 1. Hold **VOL-** while injecting payload to access Hekate menu
 2. Go to **Options** → **Auto Boot** → Select your preference
@@ -136,6 +136,14 @@ By default, NitroPack is configured to autoboot into Atmosphere CFW after 5 seco
 ### Homebrew Menu Access
 - **Album Override** (Default): Hold **R** while launching Album
 - **Title Override**: Hold **R** while launching any game
+
+### Tesla Menu (Overlay System)
+Access the Tesla overlay menu by pressing **L + Down + R3** (click right stick) while in any game or app.
+
+Tesla allows you to:
+- Access overlays while in-game
+- Use system tools without leaving your game
+- Install additional .ovl overlays in `switch/.overlays/`
 
 ### Blank Prodinfo (emuMMC recommended)
 The included `exosphere.ini` blanks your console's serial number when booting CFW, adding a layer of protection against bans. **However, this is NOT foolproof.**
@@ -156,10 +164,11 @@ The included `exosphere.ini` blanks your console's serial number when booting CF
 - Check if Atmosphere version matches your Switch firmware
 - Try injecting `fusee.bin` directly instead of Hekate
 
-### Games Won't Launch / Sigpatch Errors
-- Make sure you extracted the full ZIP to SD root
-- Verify sigpatches are present in `atmosphere/exefs_patches/`
-- Update to latest NitroPack if your firmware is newer
+### Tesla Menu Not Working
+- Ensure `atmosphere/contents/420000000007E51A/` exists (nx-ovlloader)
+- Check that `switch/.overlays/ovlmenu.ovl` exists
+- Try rebooting into CFW
+- Default combo: **L + Down + R3**
 
 ### Error 2002-4153 (Corrupt Data)
 - Delete `atmosphere/contents/` folder
@@ -173,13 +182,16 @@ The included `exosphere.ini` blanks your console's serial number when booting CF
 > No method is 100% safe. Using CFW always carries ban risk. Use emuMMC, stay offline in CFW, and never use cheats online.
 
 **Q: Do I need to update NitroPack when Nintendo releases new firmware?**
-> Yes, wait for Atmosphere to support the new firmware, then download the latest NitroPack which will include updated sigpatches.
+> Yes, wait for Atmosphere to support the new firmware, then download the latest NitroPack.
 
 **Q: Can I use this with emuMMC?**
 > Yes! Hekate can create and boot emuMMC. This is the recommended way to use CFW.
 
 **Q: How do I add more homebrew apps?**
 > Place `.nro` files in the `switch/` folder on your SD card.
+
+**Q: How do I add Tesla overlays?**
+> Place `.ovl` files in `switch/.overlays/` folder.
 
 **Q: Where do I get games?**
 > **Purchase them legitimately.** You can dump your own cartridges using NXDumpTool (not included).
@@ -200,8 +212,7 @@ NitroPack is a compilation of incredible work by the Switch homebrew community:
 
 - **[Atmosphère-NX Team](https://github.com/Atmosphere-NX)** - Atmosphere CFW
 - **[CTCaer](https://github.com/CTCaer)** - Hekate bootloader
-- **[ITotalJustice](https://github.com/ITotalJustice)** - Sigpatches
-- **[Blawar](https://github.com/blawar)** - Tinfoil
+- **[WerWolv](https://github.com/WerWolv)** - Tesla Menu & nx-ovlloader
 - **[rashevskyv](https://github.com/rashevskyv)** - DBI
 - **[exelix11](https://github.com/exelix11)** - NXThemeInstaller
 - **[XorTroll](https://github.com/XorTroll)** - Goldleaf

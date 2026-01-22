@@ -12,7 +12,6 @@
 # Options:
 #   -o, --output DIR    Output directory (default: ./build)
 #   -v, --version VER   Override version string
-#   -s, --skip-tinfoil  Skip Tinfoil download
 #   -c, --clean         Clean build directory before starting
 #   -h, --help          Show this help message
 #
@@ -38,14 +37,14 @@ NC='\033[0m' # No Color
 PACK_NAME="NitroPack"
 OUTPUT_DIR="./build"
 VERSION=""
-SKIP_TINFOIL=false
 CLEAN_BUILD=false
 
 # GitHub repositories
 declare -A REPOS=(
     ["atmosphere"]="Atmosphere-NX/Atmosphere"
     ["hekate"]="CTCaer/hekate"
-    ["sigpatches"]="ITotalJustice/patches"
+    ["tesla"]="WerWolv/Tesla-Menu"
+    ["ovlloader"]="WerWolv/nx-ovlloader"
     ["dbi"]="rashevskyv/dbi"
     ["nxthemes"]="exelix11/SwitchThemeInjector"
     ["goldleaf"]="XorTroll/Goldleaf"
@@ -98,7 +97,6 @@ show_help() {
     echo "Options:"
     echo "  -o, --output DIR    Output directory (default: ./build)"
     echo "  -v, --version VER   Override version string"
-    echo "  -s, --skip-tinfoil  Skip Tinfoil download"
     echo "  -c, --clean         Clean build directory before starting"
     echo "  -h, --help          Show this help message"
     echo ""
@@ -237,42 +235,37 @@ download_hekate() {
     fi
 }
 
-download_sigpatches() {
-    log_info "Fetching Sigpatches release info..."
+download_tesla() {
+    log_info "Fetching Tesla Menu release info..."
     
-    local release_info=$(get_latest_release "${REPOS[sigpatches]}")
+    local release_info=$(get_latest_release "${REPOS[tesla]}")
     local version=$(get_release_tag "$release_info")
-    VERSIONS["sigpatches"]=$version
+    VERSIONS["tesla"]=$version
     
-    log_info "Sigpatches version: $version"
+    log_info "Tesla Menu version: $version"
     
-    # Try fusee.zip first
-    local sig_url=$(get_asset_url "$release_info" "^fusee\\.zip$")
-    if [ -z "$sig_url" ] || [ "$sig_url" = "null" ]; then
-        # Fallback to first zip
-        sig_url=$(echo "$release_info" | jq -r '.assets[0].browser_download_url')
-    fi
-    
-    if [ -n "$sig_url" ] && [ "$sig_url" != "null" ]; then
-        download_file "$sig_url" "$DOWNLOADS/sigpatches.zip" "Sigpatches"
+    local tesla_url=$(get_asset_url "$release_info" "ovlmenu\\.ovl$")
+    if [ -n "$tesla_url" ] && [ "$tesla_url" != "null" ]; then
+        download_file "$tesla_url" "$DOWNLOADS/ovlmenu.ovl" "Tesla Menu"
     else
-        log_warning "Could not find Sigpatches download URL"
+        log_warning "Could not find Tesla Menu download URL"
     fi
 }
 
-download_tinfoil() {
-    if [ "$SKIP_TINFOIL" = true ]; then
-        log_warning "Skipping Tinfoil download (--skip-tinfoil)"
-        return 0
-    fi
+download_ovlloader() {
+    log_info "Fetching nx-ovlloader release info..."
     
-    log_info "Downloading Tinfoil..."
+    local release_info=$(get_latest_release "${REPOS[ovlloader]}")
+    local version=$(get_release_tag "$release_info")
+    VERSIONS["ovlloader"]=$version
     
-    # Tinfoil is not on GitHub, download from official CDN
-    if download_file "https://tinfoil.media/repo/Tinfoil.nro" "$DOWNLOADS/tinfoil.nro" "Tinfoil"; then
-        VERSIONS["tinfoil"]="latest"
+    log_info "nx-ovlloader version: $version"
+    
+    local ovl_url=$(get_asset_url "$release_info" "nx-ovlloader\\.zip$")
+    if [ -n "$ovl_url" ] && [ "$ovl_url" != "null" ]; then
+        download_file "$ovl_url" "$DOWNLOADS/nx-ovlloader.zip" "nx-ovlloader"
     else
-        log_warning "Tinfoil download failed, continuing without it"
+        log_warning "Could not find nx-ovlloader download URL"
     fi
 }
 
@@ -387,10 +380,10 @@ extract_and_assemble() {
         unzip -q -o "$DOWNLOADS/hekate.zip" -d "$PACK_DIR/"
     fi
     
-    # Extract Sigpatches (overlay on atmosphere)
-    if [ -f "$DOWNLOADS/sigpatches.zip" ]; then
-        log_info "  → Extracting Sigpatches..."
-        unzip -q -o "$DOWNLOADS/sigpatches.zip" -d "$PACK_DIR/"
+    # Extract nx-ovlloader (Tesla sysmodule)
+    if [ -f "$DOWNLOADS/nx-ovlloader.zip" ]; then
+        log_info "  → Extracting nx-ovlloader..."
+        unzip -q -o "$DOWNLOADS/nx-ovlloader.zip" -d "$PACK_DIR/"
     fi
     
     # Extract DBI if zip exists
@@ -409,9 +402,10 @@ extract_and_assemble() {
     # Create directories and copy standalone NROs
     log_info "  → Organizing homebrew apps..."
     
-    if [ -f "$DOWNLOADS/tinfoil.nro" ]; then
-        mkdir -p "$PACK_DIR/switch/tinfoil"
-        cp "$DOWNLOADS/tinfoil.nro" "$PACK_DIR/switch/tinfoil/tinfoil.nro"
+    # Tesla Menu overlay
+    if [ -f "$DOWNLOADS/ovlmenu.ovl" ]; then
+        mkdir -p "$PACK_DIR/switch/.overlays"
+        cp "$DOWNLOADS/ovlmenu.ovl" "$PACK_DIR/switch/.overlays/"
     fi
     
     if [ -f "$DOWNLOADS/NXThemesInstaller.nro" ]; then
@@ -523,6 +517,14 @@ override_any_app_key=R
 override_any_app_address_space=39_bit
 EOF
 
+    # Tesla config
+    mkdir -p "$PACK_DIR/config/tesla"
+    cat > "$PACK_DIR/config/tesla/config.ini" << 'EOF'
+[tesla]
+; Key combo: L + Down + R3 (click right stick)
+key_combo=L+DDOWN+RSTICK
+EOF
+
     # Create hosts directory
     mkdir -p "$PACK_DIR/atmosphere/hosts"
     cat > "$PACK_DIR/atmosphere/hosts/emummc.txt" << 'EOF'
@@ -561,13 +563,13 @@ create_version_file() {
 ╠══════════════════════════════════════════════════════════════════╣
 ║  Atmosphere:        ${VERSIONS[atmosphere]:-N/A}
 ║  Hekate:            ${VERSIONS[hekate]:-N/A}
-║  Sigpatches:        ${VERSIONS[sigpatches]:-N/A}
+║  Tesla Menu:        ${VERSIONS[tesla]:-N/A}
+║  nx-ovlloader:      ${VERSIONS[ovlloader]:-N/A}
 ║  DBI:               ${VERSIONS[dbi]:-N/A}
 ║  NXThemeInstaller:  ${VERSIONS[nxthemes]:-N/A}
 ║  Goldleaf:          ${VERSIONS[goldleaf]:-N/A}
 ║  JKSV:              ${VERSIONS[jksv]:-N/A}
 ║  NX-Shell:          ${VERSIONS[nxshell]:-N/A}
-║  Tinfoil:           ${VERSIONS[tinfoil]:-N/A}
 ╠══════════════════════════════════════════════════════════════════╣
 ║  DISCLAIMER: For educational purposes only. Own your games!      ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -621,10 +623,6 @@ main() {
                 VERSION="$2"
                 shift 2
                 ;;
-            -s|--skip-tinfoil)
-                SKIP_TINFOIL=true
-                shift
-                ;;
             -c|--clean)
                 CLEAN_BUILD=true
                 shift
@@ -672,8 +670,8 @@ main() {
     
     download_atmosphere
     download_hekate
-    download_sigpatches
-    download_tinfoil
+    download_tesla
+    download_ovlloader
     download_dbi
     download_nxthemes
     download_goldleaf
