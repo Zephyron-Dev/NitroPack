@@ -46,6 +46,8 @@ NitroPack bundles the latest versions of essential CFW components:
 | **Goldleaf** | Multi-purpose title manager | [XorTroll/Goldleaf](https://github.com/XorTroll/Goldleaf) |
 | **JKSV** | Save data manager | [J-D-K/JKSV](https://github.com/J-D-K/JKSV) |
 | **NX-Shell** | File browser | [joel16/NX-Shell](https://github.com/joel16/NX-Shell) |
+| **Checkpoint** | Save data manager | [BernardoGiordano/Checkpoint](https://github.com/BernardoGiordano/Checkpoint) |
+| **HB App Store** | Homebrew app store | [fortheusers/hb-appstore](https://github.com/fortheusers/hb-appstore) |
 | **Homebrew Menu** | Included with Atmosphere | Built-in |
 
 ### Pre-configured Files
@@ -219,6 +221,8 @@ NitroPack is a compilation of incredible work by the Switch homebrew community:
 - **[XorTroll](https://github.com/XorTroll)** - Goldleaf
 - **[J-D-K](https://github.com/J-D-K)** - JKSV
 - **[joel16](https://github.com/joel16)** - NX-Shell
+- **[BernardoGiordano](https://github.com/BernardoGiordano)** - Checkpoint
+- **[fortheusers](https://github.com/fortheusers)** - HB App Store
 
 **This project would not exist without their dedication to the homebrew scene. ❤️**
 

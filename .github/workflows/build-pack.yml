@@ -62,6 +62,8 @@ env:
   GOLDLEAF_REPO: XorTroll/Goldleaf
   JKSV_REPO: J-D-K/JKSV
   NXSHELL_REPO: joel16/NX-Shell
+  CHECKPOINT_REPO: BernardoGiordano/Checkpoint
+  HBAPPSTORE_REPO: fortheusers/hb-appstore
 
 jobs:
   build:
@@ -122,6 +124,8 @@ jobs:
           GOLDLEAF_VER=$(get_latest_release "$GOLDLEAF_REPO")
           JKSV_VER=$(get_latest_release "$JKSV_REPO")
           NXSHELL_VER=$(get_latest_release "$NXSHELL_REPO")
+          CHECKPOINT_VER=$(get_latest_release "$CHECKPOINT_REPO")
+          HBAPPSTORE_VER=$(get_latest_release "$HBAPPSTORE_REPO")
           
           # Output versions
           echo "atmosphere=${ATMO_VER}" >> $GITHUB_OUTPUT
@@ -133,6 +137,8 @@ jobs:
           echo "goldleaf=${GOLDLEAF_VER}" >> $GITHUB_OUTPUT
           echo "jksv=${JKSV_VER}" >> $GITHUB_OUTPUT
           echo "nxshell=${NXSHELL_VER}" >> $GITHUB_OUTPUT
+          echo "checkpoint=${CHECKPOINT_VER}" >> $GITHUB_OUTPUT
+          echo "hbappstore=${HBAPPSTORE_VER}" >> $GITHUB_OUTPUT
           
           # Print summary
           echo ""
@@ -146,6 +152,8 @@ jobs:
           echo "  Goldleaf:        ${GOLDLEAF_VER}"
           echo "  JKSV:            ${JKSV_VER}"
           echo "  NX-Shell:        ${NXSHELL_VER}"
+          echo "  Checkpoint:      ${CHECKPOINT_VER}"
+          echo "  HB App Store:    ${HBAPPSTORE_VER}"
 
       # =========================================================================
       # DOWNLOAD COMPONENTS
@@ -359,6 +367,48 @@ jobs:
             echo "⚠️ NX-Shell not found, continuing..."
           fi
 
+      - name: 📥 Download Checkpoint
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📥 Downloading Checkpoint..."
+          cd build/downloads
+          
+          RELEASE_INFO=$(curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${CHECKPOINT_REPO}/releases/latest")
+          
+          CHECKPOINT_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("Checkpoint\\.nro$")) | .browser_download_url')
+          
+          if [ -n "$CHECKPOINT_URL" ] && [ "$CHECKPOINT_URL" != "null" ]; then
+            wget -q --show-progress -O Checkpoint.nro "$CHECKPOINT_URL"
+            echo "✅ Downloaded Checkpoint"
+          else
+            echo "⚠️ Checkpoint not found, continuing..."
+          fi
+
+      - name: 📥 Download HB App Store
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          echo "📥 Downloading HB App Store..."
+          cd build/downloads
+          
+          RELEASE_INFO=$(curl -sL \
+            -H "Authorization: Bearer $GH_TOKEN" \
+            -H "Accept: application/vnd.github+json" \
+            "https://api.github.com/repos/${HBAPPSTORE_REPO}/releases/latest")
+          
+          APPSTORE_URL=$(echo "$RELEASE_INFO" | jq -r '.assets[] | select(.name | test("appstore\\.nro$")) | .browser_download_url')
+          
+          if [ -n "$APPSTORE_URL" ] && [ "$APPSTORE_URL" != "null" ]; then
+            wget -q --show-progress -O appstore.nro "$APPSTORE_URL"
+            echo "✅ Downloaded HB App Store"
+          else
+            echo "⚠️ HB App Store not found, continuing..."
+          fi
+
       # =========================================================================
       # EXTRACT & ASSEMBLE
       # =========================================================================
@@ -420,6 +470,16 @@ jobs:
           if [ -f downloads/NX-Shell.nro ]; then
             mkdir -p output/switch/NX-Shell
             cp downloads/NX-Shell.nro output/switch/NX-Shell/
+          fi
+          
+          if [ -f downloads/Checkpoint.nro ]; then
+            mkdir -p output/switch/Checkpoint
+            cp downloads/Checkpoint.nro output/switch/Checkpoint/
+          fi
+          
+          if [ -f downloads/appstore.nro ]; then
+            mkdir -p output/switch/appstore
+            cp downloads/appstore.nro output/switch/appstore/
           fi
           
           # Copy fusee.bin to payloads
@@ -584,6 +644,8 @@ jobs:
           ║  Goldleaf:          ${{ steps.fetch_versions.outputs.goldleaf }}
           ║  JKSV:              ${{ steps.fetch_versions.outputs.jksv }}
           ║  NX-Shell:          ${{ steps.fetch_versions.outputs.nxshell }}
+          ║  Checkpoint:        ${{ steps.fetch_versions.outputs.checkpoint }}
+          ║  HB App Store:      ${{ steps.fetch_versions.outputs.hbappstore }}
           ╠══════════════════════════════════════════════════════════════════╣
           ║  DISCLAIMER: For educational purposes only. Own your games!      ║
           ║  https://github.com/Zephyron-Dev/NitroPack                      ║
@@ -657,6 +719,8 @@ jobs:
             | Goldleaf | `${{ steps.fetch_versions.outputs.goldleaf }}` |
             | JKSV | `${{ steps.fetch_versions.outputs.jksv }}` |
             | NX-Shell | `${{ steps.fetch_versions.outputs.nxshell }}` |
+            | Checkpoint | `${{ steps.fetch_versions.outputs.checkpoint }}` |
+            | HB App Store | `${{ steps.fetch_versions.outputs.hbappstore }}` |
             
             ---
             

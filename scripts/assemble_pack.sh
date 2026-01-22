@@ -50,6 +50,8 @@ declare -A REPOS=(
     ["goldleaf"]="XorTroll/Goldleaf"
     ["jksv"]="J-D-K/JKSV"
     ["nxshell"]="joel16/NX-Shell"
+    ["checkpoint"]="BernardoGiordano/Checkpoint"
+    ["hbappstore"]="fortheusers/hb-appstore"
 )
 
 # Version tracking
@@ -361,6 +363,40 @@ download_nxshell() {
     fi
 }
 
+download_checkpoint() {
+    log_info "Fetching Checkpoint release info..."
+    
+    local release_info=$(get_latest_release "${REPOS[checkpoint]}")
+    local version=$(get_release_tag "$release_info")
+    VERSIONS["checkpoint"]=$version
+    
+    log_info "Checkpoint version: $version"
+    
+    local cp_url=$(get_asset_url "$release_info" "Checkpoint\\.nro$")
+    if [ -n "$cp_url" ] && [ "$cp_url" != "null" ]; then
+        download_file "$cp_url" "$DOWNLOADS/Checkpoint.nro" "Checkpoint"
+    else
+        log_warning "Could not find Checkpoint download URL"
+    fi
+}
+
+download_hbappstore() {
+    log_info "Fetching HB App Store release info..."
+    
+    local release_info=$(get_latest_release "${REPOS[hbappstore]}")
+    local version=$(get_release_tag "$release_info")
+    VERSIONS["hbappstore"]=$version
+    
+    log_info "HB App Store version: $version"
+    
+    local hb_url=$(get_asset_url "$release_info" "appstore\\.nro$")
+    if [ -n "$hb_url" ] && [ "$hb_url" != "null" ]; then
+        download_file "$hb_url" "$DOWNLOADS/appstore.nro" "HB App Store"
+    else
+        log_warning "Could not find HB App Store download URL"
+    fi
+}
+
 # =============================================================================
 # Assembly Functions
 # =============================================================================
@@ -426,6 +462,16 @@ extract_and_assemble() {
     if [ -f "$DOWNLOADS/NX-Shell.nro" ]; then
         mkdir -p "$PACK_DIR/switch/NX-Shell"
         cp "$DOWNLOADS/NX-Shell.nro" "$PACK_DIR/switch/NX-Shell/"
+    fi
+    
+    if [ -f "$DOWNLOADS/Checkpoint.nro" ]; then
+        mkdir -p "$PACK_DIR/switch/Checkpoint"
+        cp "$DOWNLOADS/Checkpoint.nro" "$PACK_DIR/switch/Checkpoint/"
+    fi
+    
+    if [ -f "$DOWNLOADS/appstore.nro" ]; then
+        mkdir -p "$PACK_DIR/switch/appstore"
+        cp "$DOWNLOADS/appstore.nro" "$PACK_DIR/switch/appstore/"
     fi
     
     # Copy fusee.bin to payloads
@@ -577,6 +623,8 @@ create_version_file() {
 ║  Goldleaf:          ${VERSIONS[goldleaf]:-N/A}
 ║  JKSV:              ${VERSIONS[jksv]:-N/A}
 ║  NX-Shell:          ${VERSIONS[nxshell]:-N/A}
+║  Checkpoint:        ${VERSIONS[checkpoint]:-N/A}
+║  HB App Store:      ${VERSIONS[hbappstore]:-N/A}
 ╠══════════════════════════════════════════════════════════════════╣
 ║  DISCLAIMER: For educational purposes only. Own your games!      ║
 ╚══════════════════════════════════════════════════════════════════╝
@@ -684,6 +732,8 @@ main() {
     download_goldleaf
     download_jksv
     download_nxshell
+    download_checkpoint
+    download_hbappstore
     
     echo ""
     echo -e "${CYAN}═══════════════════════════════════════════════════════════════════${NC}"
