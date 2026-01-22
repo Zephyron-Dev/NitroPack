@@ -46,6 +46,10 @@ concurrency:
   group: build-pack
   cancel-in-progress: true
 
+# Required permissions for creating releases
+permissions:
+  contents: write
+
 env:
   PACK_NAME: NitroPack
   # Component GitHub repos (owner/repo format)
