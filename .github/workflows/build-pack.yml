@@ -440,7 +440,7 @@ jobs:
           # Create hekate_ipl.ini with NitroPack branding
           cat > bootloader/hekate_ipl.ini << 'EOF'
           # NitroPack - Hekate Configuration
-          # https://github.com/YOUR_USERNAME/NitroPack
+          # https://github.com/Zephyron-Dev/NitroPack
           
           [config]
           autoboot=0
@@ -572,7 +572,7 @@ jobs:
           ║  NX-Shell:          ${{ steps.fetch_versions.outputs.nxshell }}
           ╠══════════════════════════════════════════════════════════════════╣
           ║  DISCLAIMER: For educational purposes only. Own your games!      ║
-          ║  https://github.com/YOUR_USERNAME/NitroPack                      ║
+          ║  https://github.com/Zephyron-Dev/NitroPack                      ║
           ╚══════════════════════════════════════════════════════════════════╝
           EOF
           

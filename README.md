@@ -3,15 +3,15 @@
 <div align="center">
 
 ![NitroPack Banner](https://img.shields.io/badge/NitroPack-CFW%20Bundle-ff4444?style=for-the-badge&logo=nintendo-switch&logoColor=white)
-[![GitHub Release](https://img.shields.io/github/v/release/YOUR_USERNAME/NitroPack?style=for-the-badge&color=00d4aa)](https://github.com/YOUR_USERNAME/NitroPack/releases/latest)
-[![Build Pack](https://img.shields.io/github/actions/workflow/status/YOUR_USERNAME/NitroPack/build-pack.yml?style=for-the-badge&label=Auto%20Build)](https://github.com/YOUR_USERNAME/NitroPack/actions)
+[![GitHub Release](https://img.shields.io/github/v/release/Zephyron-Dev/NitroPack?style=for-the-badge&color=00d4aa)](https://github.com/Zephyron-Dev/NitroPack/releases/latest)
+[![Build Pack](https://img.shields.io/github/actions/workflow/status/Zephyron-Dev/NitroPack/build-pack.yml?style=for-the-badge&label=Auto%20Build)](https://github.com/Zephyron-Dev/NitroPack/actions)
 [![License](https://img.shields.io/badge/License-MIT-blue?style=for-the-badge)](LICENSE)
 
 **The goated all-in-one CFW bundle for Nintendo Switch**
 
 *Auto-updated weekly with latest releases • Zero configuration needed*
 
-[📥 Download Latest](https://github.com/YOUR_USERNAME/NitroPack/releases/latest) | [📖 Install Guide](#-installation) | [❓ FAQ](#-faq)
+[📥 Download Latest](https://github.com/Zephyron-Dev/NitroPack/releases/latest) | [📖 Install Guide](#-installation) | [❓ FAQ](#-faq)
 
 </div>
 
@@ -66,7 +66,7 @@ NitroPack bundles the latest versions of essential CFW components:
 
 ### Quick Install (Fresh Install)
 
-1. **Download** the latest `NitroPack-vX.X.X.zip` from [Releases](https://github.com/YOUR_USERNAME/NitroPack/releases/latest)
+1. **Download** the latest `NitroPack-vX.X.X.zip` from [Releases](https://github.com/Zephyron-Dev/NitroPack/releases/latest)
 
 2. **Extract** the ZIP contents directly to the **root** of your SD card
    ```
@@ -188,7 +188,7 @@ The included `exosphere.ini` blanks your console's serial number when booting CF
 
 ## 🔄 Auto-Updates
 
-NitroPack is automatically rebuilt every week (or when manually triggered) with the latest versions of all components. Check the [Releases](https://github.com/YOUR_USERNAME/NitroPack/releases) page for updates.
+NitroPack is automatically rebuilt every week (or when manually triggered) with the latest versions of all components. Check the [Releases](https://github.com/Zephyron-Dev/NitroPack/releases) page for updates.
 
 Each release includes a detailed changelog of component versions.
 

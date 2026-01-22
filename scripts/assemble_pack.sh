@@ -449,7 +449,7 @@ apply_configs() {
     # Create hekate_ipl.ini
     cat > "$PACK_DIR/bootloader/hekate_ipl.ini" << 'EOF'
 # NitroPack - Hekate Configuration
-# https://github.com/YOUR_USERNAME/NitroPack
+# https://github.com/Zephyron-Dev/NitroPack
 
 [config]
 autoboot=0
