@@ -48,9 +48,9 @@ declare -A REPOS=(
     ["dbi"]="rashevskyv/dbi"
     ["nxthemes"]="exelix11/SwitchThemeInjector"
     ["goldleaf"]="XorTroll/Goldleaf"
-    ["jksv"]="J-D-K/JKSV"
+    ["jksv"]="Zephyron-Dev/JKSV"
     ["nxshell"]="joel16/NX-Shell"
-    ["checkpoint"]="BernardoGiordano/Checkpoint"
+    ["checkpoint"]="Zephyron-Dev/Checkpoint"
     ["hbappstore"]="fortheusers/hb-appstore"
     ["oc_switchcraft"]="halop/OC-Switchcraft-EOS"
 )
